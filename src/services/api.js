@@ -156,12 +156,30 @@ const search = {
 //  Photos 
 const photos = {
   getAll: (listingId) => get(`/listings/${listingId}/photos`),
-  upload: (listingId, formData) =>
-    http.post(`/listings/${listingId}/photos`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+  // Upload photo to existing listing. FormData with 'file' field (ASP.NET Core default for IFormFile)
+  // Must POST to /api/listings/{listingId}/photos with multipart/form-data
+
+
+
+//   upload: (listingId, formData) =>
+//     http.post(`api/listings/${listingId}/photos`, formData).then(r => r.data),
+//   setPrimary: (listingId, photoId) => post(`api/listings/${listingId}/photos/${photoId}/primary`),
+//   delete: (listingId, photoId) => del(`api/listings/${listingId}/photos/${photoId}`),
+// }
+
+
+upload: (listingId, formData) =>
+  http.post(`/api/listings/${listingId}/photos`, formData, {
+    headers: {
+      // Let browser set Content-Type automatically with boundary
+      // DO NOT manually set 'Content-Type': 'multipart/form-data' here
+      // axios will set it correctly with the boundary parameter
+      'Content-Type': undefined,
+    },
+  }).then(r => r.data),
   setPrimary: (listingId, photoId) => post(`/listings/${listingId}/photos/${photoId}/primary`),
   delete: (listingId, photoId) => del(`/listings/${listingId}/photos/${photoId}`),
 }
-
 //  Reviews 
 const reviews = {
   getForListing: (listingId) => get(`/listings/${listingId}/reviews`),

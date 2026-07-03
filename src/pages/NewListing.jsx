@@ -135,10 +135,8 @@ export default function NewListing() {
 
       try {
         const fd = new FormData()
-        // The field name must match what gilberts API expects.
-        // i need gilberts confirmation on this.
-        // ASP.NET Core default is "file" for IFormFile.
-        // If uploads fail,  gilbert what field name they used.
+        // Upload to /api/listings/{listingId}/photos with multipart/form-data
+        // Field name 'file' matches ASP.NET Core IFormFile default
         fd.append('file', updated[i].file)
 
         await api.photos.upload(listingId, fd)
