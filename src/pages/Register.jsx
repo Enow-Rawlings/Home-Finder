@@ -21,12 +21,12 @@ function InputField({ label, icon: Icon, error, ...props }) {
       {label && (
         <label className="text-sm font-medium text-ink-700">{label}</label>
       )}
-      <div className={`flex items-center border-2 rounded-xl px-3 py-2.5 transition-colors ${
-        error ? 'border-red-400 bg-red-50' : 'border-surface-200 focus-within:border-primary-500'
+      <div className={`flex items-center border-2 rounded-xl px-3 py-2.5 transition-colors focus-within:border-surface-200 focus-within:ring-0 ${
+        error ? 'border-red-400 bg-red-50' : 'border-surface-200'
       }`}>
         {Icon && <Icon className="w-4 h-4 text-ink-400 mr-2.5 shrink-0" />}
         <input
-          className="flex-1 text-sm outline-none bg-transparent text-ink-900 placeholder:text-ink-300"
+          className="flex-1 text-sm outline-none bg-transparent text-ink-900 placeholder:text-ink-300 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
           {...props}
         />
       </div>
@@ -188,11 +188,11 @@ export default function Register() {
             />
 
             {/* Password row */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-ink-700">Password</label>
-                <div className={`flex items-center border-2 rounded-xl px-3 py-2.5 transition-colors ${
-                  errors.password ? 'border-red-400' : 'border-surface-200 focus-within:border-primary-500'
+                <div className={`flex items-center border-2 rounded-xl px-3 py-2.5 transition-colors focus-within:border-surface-200 focus-within:ring-0 ${
+                  errors.password ? 'border-red-400' : 'border-surface-200'
                 }`}>
                   <Lock className="w-4 h-4 text-ink-400 mr-2 shrink-0" />
                   <input
@@ -200,7 +200,7 @@ export default function Register() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="flex-1 text-sm outline-none bg-transparent placeholder:text-ink-300 w-0"
+                    className="flex-1 text-sm outline-none bg-transparent placeholder:text-ink-300 w-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
                   />
                   <button type="button" onClick={() => setShowPw(v => !v)} className="ml-1">
                     {showPw
@@ -213,8 +213,8 @@ export default function Register() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-ink-700">Confirm Password</label>
-                <div className={`flex items-center border-2 rounded-xl px-3 py-2.5 transition-colors ${
-                  errors.confirm ? 'border-red-400' : 'border-surface-200 focus-within:border-primary-500'
+                <div className={`flex items-center border-2 rounded-xl px-3 py-2.5 transition-colors focus-within:border-surface-200 focus-within:ring-0 ${
+                  errors.confirm ? 'border-red-400' : 'border-surface-200'
                 }`}>
                   <RefreshCw className="w-4 h-4 text-ink-400 mr-2 shrink-0" />
                   <input
@@ -222,7 +222,7 @@ export default function Register() {
                     placeholder="••••••••"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    className="flex-1 text-sm outline-none bg-transparent placeholder:text-ink-300 w-0"
+                    className="flex-1 text-sm outline-none bg-transparent placeholder:text-ink-300 w-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
                   />
                   <button type="button" onClick={() => setShowCf(v => !v)} className="ml-1">
                     {showCf
