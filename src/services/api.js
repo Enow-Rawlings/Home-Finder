@@ -18,8 +18,7 @@ const getAuthData = (data = {}) => {
   }
 }
 
-// Use an explicit backend URL when configured, otherwise route through /api.
-// If the explicit URL points at the backend root, append /api automatically.
+
 const rawBase = import.meta.env.VITE_API_URL?.trim()
 const normalizedBase = rawBase ? rawBase.replace(/\/+$/, '') : ''
 const BASE = normalizedBase
@@ -41,7 +40,6 @@ export const tokenStore = {
 
 const http = axios.create({
   baseURL: BASE,
-  headers: { 'Content-Type': 'application/json' },
 })
 
 //  Request interceptor 
@@ -103,11 +101,44 @@ http.interceptors.response.use(
 )
 
 const normalizeEndpoint = (url) => url.startsWith('/') ? url.slice(1) : url
-const get   = (url, params) => http.get(normalizeEndpoint(url), { params }).then(r => r.data)
-const post  = (url, body)   => http.post(normalizeEndpoint(url), body).then(r => r.data)
-const put   = (url, body)   => http.put(normalizeEndpoint(url), body).then(r => r.data)
-const patch = (url, body)   => http.patch(normalizeEndpoint(url), body).then(r => r.data)
+const cleanParams = (params = {}) => Object.fromEntries(
+  Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+)
+const getEndpointUrl = (url) => {
+  const endpoint = normalizeEndpoint(url)
+  return BASE.startsWith('http') ? `${BASE}/${endpoint}` : `${BASE}/${endpoint}`
+}
+const jsonHeaders = { 'Content-Type': 'application/json' }
+const get   = (url, params) => http.get(normalizeEndpoint(url), { params: cleanParams(params) }).then(r => r.data)
+const post  = (url, body)   => http.post(normalizeEndpoint(url), body, { headers: jsonHeaders }).then(r => r.data)
+const postEmpty = async (url) => {
+  const headers = {}
+  const auth = tokenStore.get()
+  if (auth?.accessToken) headers.Authorization = `Bearer ${auth.accessToken}`
+
+  const response = await fetch(getEndpointUrl(url), {
+    method: 'POST',
+    headers,
+  })
+
+  const text = await response.text()
+  const contentType = response.headers.get('content-type') || ''
+  const data = text && contentType.includes('application/json') ? JSON.parse(text) : text || null
+
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.Message || `Request failed with status ${response.status}`)
+    error.response = { status: response.status, data }
+    throw error
+  }
+
+  return data
+}
+const put   = (url, body)   => http.put(normalizeEndpoint(url), body, { headers: jsonHeaders }).then(r => r.data)
+const patch = (url, body)   => http.patch(normalizeEndpoint(url), body, { headers: jsonHeaders }).then(r => r.data)
 const del   = (url)         => http.delete(normalizeEndpoint(url)).then(r => r.data)
+const postForm = (url, formData) => {
+  return http.post(normalizeEndpoint(url), formData).then(r => r.data)
+}
 
 //  Auth 
 const auth = {
@@ -140,12 +171,21 @@ const auth = {
 
 //  Listings 
 const listings = {
-  browse: (params) => get('/listings', params),
+  browse: async (params) => {
+    try {
+      return await get('/listings', params)
+    } catch (error) {
+      if (error?.response?.status === 400 && Object.keys(cleanParams(params)).length > 0) {
+        return get('/listings')
+      }
+      throw error
+    }
+  },
   getById: (id) => get(`/listings/${id}`),
   mine: () => get('/listings/mine'),
   create: (body) => post('/listings', body),
   update: (id, body) => put(`/listings/${id}`, body),
-  submitForVerification: (id) => post(`/listings/${id}/submit-for-verification`),
+  submitForVerification: (id) => postEmpty(`/listings/${id}/submit-for-verification`),
 }
 
 //  Search 
@@ -156,27 +196,14 @@ const search = {
 //  Photos 
 const photos = {
   getAll: (listingId) => get(`/listings/${listingId}/photos`),
-  // Upload photo to existing listing. FormData with 'file' field (ASP.NET Core default for IFormFile)
-  // Must POST to /api/listings/{listingId}/photos with multipart/form-data
+  upload: (listingId, { file, isPrimary = false, altText = '' }) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('isPrimary', String(Boolean(isPrimary)))
+    if (altText) formData.append('altText', altText)
 
-
-
-//   upload: (listingId, formData) =>
-//     http.post(`api/listings/${listingId}/photos`, formData).then(r => r.data),
-//   setPrimary: (listingId, photoId) => post(`api/listings/${listingId}/photos/${photoId}/primary`),
-//   delete: (listingId, photoId) => del(`api/listings/${listingId}/photos/${photoId}`),
-// }
-
-
-upload: (listingId, formData) =>
-  http.post(`/api/listings/${listingId}/photos`, formData, {
-    headers: {
-      // Let browser set Content-Type automatically with boundary
-      // DO NOT manually set 'Content-Type': 'multipart/form-data' here
-      // axios will set it correctly with the boundary parameter
-      'Content-Type': undefined,
-    },
-  }).then(r => r.data),
+    return postForm(`/listings/${listingId}/photos`, formData)
+  },
   setPrimary: (listingId, photoId) => post(`/listings/${listingId}/photos/${photoId}/primary`),
   delete: (listingId, photoId) => del(`/listings/${listingId}/photos/${photoId}`),
 }
@@ -191,9 +218,9 @@ const bookings = {
   mine: () => get('/bookings/mine'),
   forListing: (listingId) => get(`/listings/${listingId}/bookings`),
   request: (body) => post('/bookings', body),
-  approve: (id) => post(`/bookings/${id}/approve`),
-  reject: (id) => post(`/bookings/${id}/reject`),
-  cancel: (id) => post(`/bookings/${id}/cancel`),
+  approve: (id) => postEmpty(`/bookings/${id}/approve`),
+  reject: (id) => postEmpty(`/bookings/${id}/reject`),
+  cancel: (id) => postEmpty(`/bookings/${id}/cancel`),
 }
 
 //  Payments 
@@ -215,8 +242,8 @@ const enquiries = {
 const notifications = {
   getAll: (params) => get('/notifications', params),
   unreadCount: () => get('/notifications/unread-count'),
-  markRead: (id) => post(`/notifications/${id}/mark-read`),
-  archive: (id) => post(`/notifications/${id}/archive`),
+  markRead: (id) => postEmpty(`/notifications/${id}/mark-read`),
+  archive: (id) => postEmpty(`/notifications/${id}/archive`),
 }
 
 //  Reports 
@@ -229,17 +256,18 @@ const admin = {
   getDashboardAnalytics: () => get('/admin/analytics/dashboard'),
   listUsers: (params) => get('/admin/users', params),
   getUser: (id) => get(`/admin/users/${id}`),
-  suspendUser: (id) => post(`/admin/users/${id}/suspend`),
-  restoreUser: (id) => post(`/admin/users/${id}/restore`),
+  suspendUser: (id) => postEmpty(`/admin/users/${id}/suspend`),
+  restoreUser: (id) => postEmpty(`/admin/users/${id}/restore`),
   changeUserRole: (id, role) => patch(`/admin/users/${id}/role`, { Role: role }),
   listPendingListings: (params) => get('/admin/listings/pending', params),
-  approveListing: (id) => post(`/admin/listings/${id}/approve`),
-  rejectListing: (id) => post(`/admin/listings/${id}/reject`),
-  suspendListing: (id) => post(`/admin/listings/${id}/suspend`),
-  markPaymentPaid: (id) => post(`/admin/payments/${id}/mark-paid`),
-  completeRefund: (id) => post(`/admin/refunds/${id}/complete`),
+  approveListing: (id) => post(`/admin/listings/${id}/approve`, { Id: id }),
+  rejectListing: (id) => post(`/admin/listings/${id}/reject`, { Id: id }),
+  suspendListing: (id) => post(`/admin/listings/${id}/suspend`, { Id: id }),
+  markPaymentPaid: (id) => postEmpty(`/admin/payments/${id}/mark-paid`),
+  completeRefund: (id) => postEmpty(`/admin/refunds/${id}/complete`),
   getReports: (params) => get('/admin/reports', params),
-  markReportInReview: (id) => post(`/admin/reports/${id}/mark-in-review`),
+  listReports: (params) => get('/admin/reports', params),
+  markReportInReview: (id) => postEmpty(`/admin/reports/${id}/mark-in-review`),
   resolveReport: (id, note) => post(`/admin/reports/${id}/resolve`, { ResolutionNote: note }),
   dismissReport: (id, note) => post(`/admin/reports/${id}/dismiss`, { ResolutionNote: note }),
 }

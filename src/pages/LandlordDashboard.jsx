@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { getCollection, getEntityId, normalizeListing } from '../services/apiResponse'
+import { buildListingCreatePayload, getApiErrorMessage, validateListingCreateForm } from '../features/listings/listingForm'
 
 
 function statusPill(status) {
@@ -1010,30 +1012,32 @@ function NewListingView({ onCreated }) {
 
   const handleCreate = async () => {
     setError('')
-    if (!form.Title || !form.City || !form.PricePerNight) {
-      setError('Title, city and price are required.')
+    const validationError = validateListingCreateForm(form)
+    if (validationError) {
+      setError(validationError)
       return
     }
     setSaving(true)
     try {
-      await api.listings.create({
-        ...form,
-        PricePerNight: Number(form.PricePerNight),
-        Bedrooms: Number(form.Bedrooms),
-        Bathrooms: Number(form.Bathrooms),
-        MaxGuests: Number(form.MaxGuests),
-      })
+      const createdListing = await api.listings.create(buildListingCreatePayload(form))
+      const listingId = getEntityId(createdListing)
+      if (!listingId) {
+        setError('Listing was created, but the server did not return its ID. Please submit it from the Verification tab.')
+        return
+      }
+
+      await api.listings.submitForVerification(listingId)
       setSuccess(true)
       setTimeout(() => onCreated(), 2000)
     } catch (e) {
-      setError(e.response?.data?.Message || 'Failed to create listing.')
+      setError(getApiErrorMessage(e, 'Failed to create listing. Check all fields.'))
     } finally { setSaving(false) }
   }
 
   if (success) return (
     <div className="flex flex-col items-center justify-center py-24 gap-4">
       <CheckCircle2 className="w-16 h-16 text-primary-600" />
-      <h2 className="font-display font-bold text-2xl text-ink-900">Listing Created!</h2>
+      <h2 className="font-display font-bold text-2xl text-ink-900">Listing Submitted!</h2>
       <p className="text-ink-500 text-sm">Redirecting to your properties…</p>
     </div>
   )
@@ -1041,7 +1045,7 @@ function NewListingView({ onCreated }) {
   return (
     <div className="max-w-2xl">
       <h2 className="font-display font-bold text-2xl text-ink-900 mb-1">Create New Listing</h2>
-      <p className="text-sm text-ink-500 mb-6">Fill in the details. You can submit for verification after creation.</p>
+      <p className="text-sm text-ink-500 mb-6">Fill in the details. The listing will be sent to admin for approval.</p>
 
       <div className="bg-white rounded-xl2 shadow-card p-6 space-y-5">
         {[['Title','text','Property title','Title'],['Address','text','Street address','Address'],['City','text','e.g. Buea','City'],['Region','text','e.g. South West','Region']].map(([label,type,ph,key]) => (
@@ -1110,9 +1114,9 @@ function NewListingView({ onCreated }) {
 
         <button onClick={handleCreate} disabled={saving}
           className="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-          {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : 'Create Listing Draft'}
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : 'Submit for Approval'}
         </button>
-        <p className="text-xs text-ink-400 text-center">After creation, go to Verification to submit for admin review.</p>
+        <p className="text-xs text-ink-400 text-center">Approved listings become visible to house seekers.</p>
       </div>
     </div>
   )
@@ -1139,8 +1143,8 @@ export default function LandlordDashboard() {
         api.listings.mine(),
         api.enquiries.mine(),
       ])
-      setListings(l)
-      setEnquiries(e)
+      setListings(getCollection(l).map(normalizeListing))
+      setEnquiries(getCollection(e))
     } catch (err) {
       showToast('Failed to load data. Please refresh.')
     } finally { setDataLoading(false) }

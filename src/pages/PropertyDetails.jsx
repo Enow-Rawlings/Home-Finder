@@ -11,6 +11,7 @@ import {
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { isSeekerRole } from '../lib/roles'
+import { getCollection, normalizeListing, normalizePhoto } from '../services/apiResponse'
 
 const AMENITY_ICONS = {
   WiFi: Wifi, Generator: Zap, 'Water Supply': Waves,
@@ -244,8 +245,8 @@ export default function PropertyDetails() {
         ])
 
         if (l.status === 'rejected') throw l.reason
-        setListing(l.value)
-        setPhotos(p.status === 'fulfilled' ? p.value : [])
+        setListing(normalizeListing(l.value))
+        setPhotos(p.status === 'fulfilled' ? getCollection(p.value).map(normalizePhoto) : [])
         setReviews(r.status === 'fulfilled' ? r.value : null)
       } catch (e) {
         console.error('Failed to load listing:', e)
@@ -271,8 +272,10 @@ export default function PropertyDetails() {
 
   // Build image list: use real uploaded photos, fallback to placeholder
   const images = photos.length > 0
-    ? photos.sort((a, b) => a.DisplayOrder - b.DisplayOrder).map(p => p.Url)
+    ? photos.sort((a, b) => a.DisplayOrder - b.DisplayOrder).map(p => p.Url).filter(Boolean)
     : ['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=900&auto=format&fit=crop']
+  const location = [listing.Address, listing.City, listing.Region, listing.Country].filter(Boolean).join(', ')
+  const shortLocation = [listing.City, listing.Region].filter(Boolean).join(', ')
 
   const prevImg = () => setActiveImg(i => (i - 1 + images.length) % images.length)
   const nextImg = () => setActiveImg(i => (i + 1) % images.length)
@@ -387,7 +390,7 @@ export default function PropertyDetails() {
               <div className="h-40 rounded-xl bg-surface-100 flex items-center justify-center border border-surface-200">
                 <span className="flex items-center gap-2 bg-primary-600 text-white text-sm font-semibold px-4 py-2 rounded-full shadow">
                   <MapPin className="w-4 h-4" />
-                  {listing.Address}, {listing.City}, {listing.Region}
+                  {location || 'Location unavailable'}
                 </span>
               </div>
             </div>
@@ -428,7 +431,7 @@ export default function PropertyDetails() {
                 <span className="text-ink-400 font-normal text-sm">/mo</span>
               </p>
               <p className="text-sm text-ink-500 flex items-center gap-1 mt-1">
-                <MapPin className="w-3.5 h-3.5" /> {listing.City}, {listing.Region}
+                <MapPin className="w-3.5 h-3.5" /> {shortLocation || listing.Country || 'Location unavailable'}
               </p>
 
               {/* Stats */}

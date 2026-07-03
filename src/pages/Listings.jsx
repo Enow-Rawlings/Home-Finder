@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MapPin, Heart, BedDouble, Bath, Ruler, Clock, BadgeCheck, ChevronLeft, ChevronRight, Search, Loader2, Building2 } from 'lucide-react'
 import api from '../services/api'
+import { getCollection, getTotalCount, normalizeListing } from '../services/apiResponse'
 
 // Cameroon cities
 const CM_CITIES = [
@@ -21,8 +22,10 @@ const fadeUp = {
 
 function ListingCard({ listing, index, favorited, onToggleFavorite }) {
   const photo = listing.PrimaryPhotoUrl
-  const hoursOld = listing.AvailableFrom
-    ? Math.floor((Date.now() - new Date(listing.AvailableFrom)) / 3600000)
+  const availableFrom = listing.AvailableFrom ? new Date(listing.AvailableFrom) : null
+  const location = [listing.City, listing.Region].filter(Boolean).join(', ')
+  const hoursOld = availableFrom && !Number.isNaN(availableFrom.getTime())
+    ? Math.floor((Date.now() - availableFrom.getTime()) / 3600000)
     : 0
   const expiring = hoursOld > 40
 
@@ -52,7 +55,7 @@ function ListingCard({ listing, index, favorited, onToggleFavorite }) {
       <div className="p-5">
         <h3 className="font-display font-semibold text-ink-900 truncate">{listing.Title}</h3>
         <p className="text-sm text-ink-500 flex items-center gap-1 mt-1">
-          <MapPin className="w-3.5 h-3.5" /> {listing.City}, {listing.Region}
+          <MapPin className="w-3.5 h-3.5" /> {location || listing.Country || 'Location unavailable'}
         </p>
         <div className="flex items-center gap-4 text-xs text-ink-500 mt-3 pb-3 border-b border-surface-200">
           <span className="flex items-center gap-1"><BedDouble className="w-4 h-4" /> {listing.Bedrooms} {listing.Bedrooms === 1 ? 'Bed' : 'Beds'}</span>
@@ -102,12 +105,12 @@ export default function Listings() {
           Page:     page,
           PageSize: PAGE_SIZE,
         })
-        setResults(res.Items || [])
-        setTotal(res.TotalCount || 0)
+        setResults(getCollection(res).map(normalizeListing))
+        setTotal(getTotalCount(res))
       } else {
         const res = await api.listings.browse({ Page: page, PageSize: PAGE_SIZE })
-        setResults(Array.isArray(res) ? res : res.Items || [])
-        setTotal(Array.isArray(res) ? res.length : res.TotalCount || 0)
+        setResults(getCollection(res).map(normalizeListing))
+        setTotal(getTotalCount(res))
       }
     } catch (err) {
       console.error('Failed to fetch listings:', err)

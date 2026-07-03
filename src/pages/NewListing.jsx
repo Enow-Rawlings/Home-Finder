@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Upload, X, CheckCircle2, Loader2, ImagePlus, AlertCircle } from 'lucide-react'
 import api from '../services/api'
+import { getEntityId, normalizePhoto } from '../services/apiResponse'
+import { buildListingCreatePayload, getApiErrorMessage, validateListingCreateForm } from '../features/listings/listingForm'
 
 const CM_CITIES = [
   'Yaoundé','Douala','Bafoussam','Bamenda','Garoua','Maroua','Ngaoundéré',
@@ -23,6 +25,7 @@ const AMENITIES = [
   'WiFi','Generator','Water Supply','Security',
   'Parking','Balcony','Pool','Gym','Kitchen','Air Conditioning',
 ]
+const MAX_PHOTOS = 8
 
 function Field({ label, children, required }) {
   return (
@@ -44,7 +47,7 @@ export default function NewListing() {
   const [listingId, setListingId] = useState(null)
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
-  const [photos,    setPhotos]    = useState([])  // { file, preview, uploading, done, error }
+  const [photos,    setPhotos]    = useState([])  // { file, preview, uploading, done, error, uploadedUrl }
   const [uploading, setUploading] = useState(false)
 
   const [form, setForm] = useState({
@@ -71,38 +74,31 @@ export default function NewListing() {
   //  Step 1: Create draft 
   const handleCreate = async () => {
     setError('')
-    if (!form.Title.trim())     { setError('Title is required.'); return }
-    if (!form.City)             { setError('City is required.'); return }
-    if (!form.Address.trim())   { setError('Address is required.'); return }
-    if (!form.PricePerNight)    { setError('Price is required.'); return }
+    const validationError = validateListingCreateForm(form)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
 
     setSaving(true)
     try {
-      const res = await api.listings.create({
-        ...form,
-        PricePerNight: Number(form.PricePerNight),
-        Bedrooms:      Number(form.Bedrooms),
-        Bathrooms:     Number(form.Bathrooms),
-        MaxGuests:     Number(form.MaxGuests),
-      })
-      setListingId(res.Id)
+      const res = await api.listings.create(buildListingCreatePayload(form))
+      const createdListingId = getEntityId(res)
+      if (!createdListingId) {
+        setError('Listing was created, but the server did not return its ID. Please refresh your dashboard and submit it for verification there.')
+        return
+      }
+      setListingId(createdListingId)
       setStep(2)
     } catch (e) {
       console.error('Create listing error:', e.response?.data)
-      const errs = e.response?.data?.Errors
-      if (errs) {
-        // FastEndpoints returns { Errors: { field: [msg] } }
-        const msg = Object.values(errs).flat().join(' ')
-        setError(msg)
-      } else {
-        setError(e.response?.data?.Message || 'Failed to create listing. Check all fields.')
-      }
+      setError(getApiErrorMessage(e, 'Failed to create listing. Check all fields.'))
     } finally { setSaving(false) }
   }
 
   //  Step 2: Photo handling 
   const handlePhotoSelect = (e) => {
-    const allowed = 2 - photos.length
+    const allowed = MAX_PHOTOS - photos.length
     const files   = Array.from(e.target.files).slice(0, allowed)
     const newPhotos = files.map(file => ({
       file,
@@ -134,13 +130,17 @@ export default function NewListing() {
       setPhotos([...updated])
 
       try {
-        const fd = new FormData()
-        // Upload to /api/listings/{listingId}/photos with multipart/form-data
-        // Field name 'file' matches ASP.NET Core IFormFile default
-        fd.append('file', updated[i].file)
-
-        await api.photos.upload(listingId, fd)
-        updated[i] = { ...updated[i], uploading: false, done: true }
+        const uploadedPhoto = normalizePhoto(await api.photos.upload(listingId, {
+          file: updated[i].file,
+          isPrimary: i === 0,
+          altText: `${form.Title || 'Listing'} photo ${i + 1}`,
+        }))
+        updated[i] = {
+          ...updated[i],
+          uploading: false,
+          done: true,
+          uploadedUrl: uploadedPhoto.Url,
+        }
       } catch (e) {
         console.error('Photo upload error:', e.response?.data)
         updated[i] = {
@@ -154,17 +154,27 @@ export default function NewListing() {
 
     setUploading(false)
 
-    await submitForVerification()
+    const submitted = await submitForVerification()
+    if (!submitted) return
   }
 
   const submitForVerification = async () => {
+    setError('')
+
+    if (!listingId) {
+      setError('Listing ID is missing. Please refresh your dashboard and submit this listing from there.')
+      return false
+    }
+
     try {
       await api.listings.submitForVerification(listingId)
+      setStep(3)
+      return true
     } catch (e) {
-     
       console.warn('Submit for verification:', e.response?.data)
+      setError(e.response?.data?.Message || 'Failed to submit listing for admin verification. Please try again.')
+      return false
     }
-    setStep(3)
   }
 
   //  Step 3: Done 
@@ -334,18 +344,18 @@ export default function NewListing() {
 
             {/* Drop zone */}
             <label className={`block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors mb-5 ${
-              photos.length >= 8 ? 'border-surface-200 opacity-50 cursor-not-allowed' : 'border-surface-300 hover:border-primary-400'
+              photos.length >= MAX_PHOTOS ? 'border-surface-200 opacity-50 cursor-not-allowed' : 'border-surface-300 hover:border-primary-400'
             }`}>
               <ImagePlus className="w-10 h-10 text-ink-300 mx-auto mb-2" />
                 <p className="text-sm font-semibold text-ink-600">
-                  {photos.length >= 2 ? 'Maximum 2 photos reached' : 'Click to add photos'}
+                  {photos.length >= MAX_PHOTOS ? `Maximum ${MAX_PHOTOS} photos reached` : 'Click to add photos'}
                 </p>
                 <p className="text-xs text-ink-400 mt-1">
-                  JPG, PNG, WEBP — max 10MB each. {2 - photos.length} remaining.
+                  JPG, PNG, WEBP — max 10MB each. {MAX_PHOTOS - photos.length} remaining.
                 </p>
               <input
                 type="file" accept="image/*" multiple
-                disabled={photos.length >= 8}
+                disabled={photos.length >= MAX_PHOTOS}
                 className="hidden"
                 onChange={handlePhotoSelect}
               />
@@ -392,6 +402,13 @@ export default function NewListing() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 mb-4">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                {error}
               </div>
             )}
 

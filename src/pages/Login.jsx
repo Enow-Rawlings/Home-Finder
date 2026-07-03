@@ -42,6 +42,8 @@ export default function Login() {
       const backendMessage = err.response?.data?.message || err.response?.data?.error || err.response?.data?.detail
       if (err.response?.status === 401) {
         setApiError('Invalid email or password.')
+      } else if (err.response?.status >= 500) {
+        setApiError('The authentication service returned a server error. Please retry shortly or check the backend logs.')
       } else if (backendMessage) {
         setApiError(backendMessage)
       } else {

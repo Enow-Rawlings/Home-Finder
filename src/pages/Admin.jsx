@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { getCollection, normalizeListing } from '../services/apiResponse'
 import NotificationsPanel from '../components/NotificationsPanel'
 
 //  Helpers 
@@ -26,6 +27,32 @@ function timeAgo(d) {
   if (s < 3600)  return `${Math.floor(s / 60)}m ago`
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`
   return `${Math.floor(s / 86400)}d ago`
+}
+function getRequestErrorMessage(error, fallback) {
+  const status = error?.response?.status
+  const message = error?.response?.data?.Message || error?.response?.data?.message || error?.message
+  return status ? `${fallback} (${status}${message ? `: ${message}` : ''})` : fallback
+}
+function formatDate(value, fallback = '—') {
+  if (!value) return fallback
+
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? fallback : date.toLocaleDateString()
+}
+function getFirstValidDate(...values) {
+  return values.find(value => value && !Number.isNaN(new Date(value).getTime()))
+}
+function normalizeAdminUser(user = {}) {
+  const id = user.Id || user.id || user.UserId || user.userId
+
+  return {
+    Id: id,
+    FullName: user.FullName || user.fullName || user.Name || user.name || 'Unnamed user',
+    Email: user.Email || user.email || 'No email',
+    Role: user.Role || user.role || 'Unknown',
+    Status: user.Status || user.status || 'Active',
+    CreatedAtUtc: user.CreatedAtUtc || user.createdAtUtc || user.CreatedAt || user.createdAt || null,
+  }
 }
 
 //  Sidebar nav ──
@@ -125,7 +152,7 @@ function BarChart({ data, labels }) {
 }
 
 //  Overview view 
-function OverviewView({ analytics, pendingListings, reports, onApprove, onReject, onViewAll }) {
+function OverviewView({ analytics, pendingListings, pendingListingsError, reports, reportsError, onApprove, onReject, onViewAll }) {
   const [chartPeriod, setChartPeriod] = useState('Month')
 
   // Derive stats from analytics response
@@ -228,7 +255,13 @@ function OverviewView({ analytics, pendingListings, reports, onApprove, onReject
             View All →
           </button>
         </div>
-        {pendingListings.length === 0 ? (
+        {pendingListingsError ? (
+          <div className="bg-red-50 border border-red-200 rounded-xl2 shadow-card p-6 text-center text-red-600">
+            <AlertTriangle className="w-10 h-10 mx-auto mb-2" />
+            <p className="text-sm font-semibold">Pending listings could not be loaded.</p>
+            <p className="text-xs mt-1 text-red-500">{pendingListingsError}</p>
+          </div>
+        ) : pendingListings.length === 0 ? (
           <div className="bg-white rounded-xl2 shadow-card p-10 text-center text-ink-400">
             <BadgeCheck className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p className="text-sm">No listings pending moderation.</p>
@@ -243,7 +276,11 @@ function OverviewView({ analytics, pendingListings, reports, onApprove, onReject
       </div>
 
       {/* Reports Management table */}
-      <ReportsTable reports={reports} />
+      {reportsError ? (
+        <div className="bg-white rounded-xl2 shadow-card p-6 text-sm text-ink-500">
+          Reports are temporarily unavailable.
+        </div>
+      ) : <ReportsTable reports={reports} />}
     </div>
   )
 }
@@ -354,7 +391,7 @@ function ReportsTable({ reports }) {
                     {r.Reason}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ink-400 text-xs">{new Date(r.CreatedAtUtc).toLocaleDateString()}</td>
+                <td className="px-4 py-3 text-ink-400 text-xs">{formatDate(r.CreatedAtUtc)}</td>
                 <td className="px-4 py-3">{statusPill(r.Status)}</td>
                 <td className="px-4 py-3">
                   <ReportActions report={r} />
@@ -426,7 +463,7 @@ function ReportActions({ report }) {
 }
 
 //  Listings view 
-function ListingsView({ pendingListings, onApprove, onReject, onRefresh, loading }) {
+function ListingsView({ pendingListings, pendingListingsError, onApprove, onReject, onRefresh, loading }) {
   const [actionLoading, setActionLoading] = useState(null)
 
   const handle = async (id, action) => {
@@ -448,6 +485,16 @@ function ListingsView({ pendingListings, onApprove, onReject, onRefresh, loading
       {loading ? (
         <div className="flex justify-center py-24">
           <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
+        </div>
+      ) : pendingListingsError ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl2 shadow-card p-10 text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-red-500" />
+          <p className="font-semibold text-red-700">Unable to load pending listings</p>
+          <p className="text-xs text-red-500 mt-1">{pendingListingsError}</p>
+          <button onClick={onRefresh}
+            className="mt-4 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+            <RefreshCw className="w-4 h-4" /> Try Again
+          </button>
         </div>
       ) : pendingListings.length === 0 ? (
         <div className="bg-white rounded-xl2 shadow-card p-10 text-center">
@@ -490,7 +537,7 @@ function ListingsView({ pendingListings, onApprove, onReject, onRefresh, loading
                     {Number(l.PricePerNight).toLocaleString()} {l.Currency}/mo
                   </td>
                   <td className="px-4 py-3 text-ink-400 text-xs">
-                    {new Date(l.CreatedAtUtc || l.SubmittedAtUtc).toLocaleDateString()}
+                    {formatDate(getFirstValidDate(l.SubmittedAtUtc, l.CreatedAtUtc, l.UpdatedAtUtc, l.AvailableFrom))}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -538,7 +585,7 @@ function UsersView() {
     setLoading(true)
     try {
       const res = await api.admin.listUsers({ Query: query||undefined, Role: role||undefined, Page: page, PageSize: 20 })
-      setUsers(Array.isArray(res) ? res : res.Items || res || [])
+      setUsers(getCollection(res).map(normalizeAdminUser))
     } catch(e) { console.error(e) } finally { setLoading(false) }
   }, [query, role, page])
 
@@ -617,10 +664,12 @@ function UsersView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100">
-              {users.map(u => {
+              {users.map((u, index) => {
                 const isActive = u.Status !== 'Suspended'
+                const joined = formatDate(u.CreatedAtUtc)
+                const userKey = u.Id || `${u.Email}-${index}`
                 return (
-                  <tr key={u.Id} className="hover:bg-surface-50 transition-colors">
+                  <tr key={userKey} className="hover:bg-surface-50 transition-colors">
                     <td className="px-4 py-3 font-semibold text-ink-900">{u.FullName}</td>
                     <td className="px-4 py-3 text-ink-600 text-xs">{u.Email}</td>
                     <td className="px-4 py-3">
@@ -645,7 +694,7 @@ function UsersView() {
                       </div>
                     </td>
                     <td className="px-4 py-3">{statusPill(u.Status)}</td>
-                    <td className="px-4 py-3 text-ink-400 text-xs">{new Date(u.CreatedAtUtc).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-ink-400 text-xs">{joined}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => isActive ? handleSuspend(u.Id) : handleRestore(u.Id)} disabled={actionLoading === u.Id}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 ${
@@ -910,7 +959,9 @@ export default function Admin() {
   const [view,            setView]           = useState('overview')
   const [analytics,       setAnalytics]      = useState(null)
   const [pendingListings, setPendingListings] = useState([])
+  const [pendingListingsError, setPendingListingsError] = useState('')
   const [reports,         setReports]        = useState([])
+  const [reportsError,    setReportsError]   = useState('')
   const [dataLoading,     setDataLoading]    = useState(true)
   const [toast,           setToast]          = useState('')
 
@@ -918,15 +969,27 @@ export default function Admin() {
 
   const loadData = useCallback(async () => {
     setDataLoading(true)
+    setPendingListingsError('')
+    setReportsError('')
     try {
       const [a, p, r] = await Promise.allSettled([
         api.admin.getDashboardAnalytics(),
         api.admin.listPendingListings({ Page: 1, PageSize: 20 }),
-        api.admin.listReports({ Page: 1, PageSize: 42 }),
+        api.admin.getReports({ Page: 1, PageSize: 42 }),
       ])
       if (a.status === 'fulfilled') setAnalytics(a.value)
-      if (p.status === 'fulfilled') setPendingListings(Array.isArray(p.value) ? p.value : p.value?.Items || [])
-      if (r.status === 'fulfilled') setReports(Array.isArray(r.value) ? r.value : r.value?.Items || [])
+      if (p.status === 'fulfilled') {
+        setPendingListings(getCollection(p.value).map(normalizeListing))
+      } else {
+        setPendingListings([])
+        setPendingListingsError(getRequestErrorMessage(p.reason, 'The moderation queue endpoint failed'))
+      }
+      if (r.status === 'fulfilled') {
+        setReports(getCollection(r.value))
+      } else {
+        setReports([])
+        setReportsError(getRequestErrorMessage(r.reason, 'The reports endpoint failed'))
+      }
     } catch(e) { console.error('Admin data load error:', e) }
     finally { setDataLoading(false) }
   }, [])
@@ -934,6 +997,11 @@ export default function Admin() {
   useEffect(() => { loadData() }, [loadData])
 
   const handleApprove = async (id) => {
+    if (!id) {
+      showToast('Cannot approve listing: listing ID is missing.')
+      return
+    }
+
     try {
       await api.admin.approveListing(id)
       setPendingListings(p => p.filter(l => l.Id !== id))
@@ -942,6 +1010,11 @@ export default function Admin() {
   }
 
   const handleReject = async (id) => {
+    if (!id) {
+      showToast('Cannot reject listing: listing ID is missing.')
+      return
+    }
+
     try {
       await api.admin.rejectListing(id)
       setPendingListings(p => p.filter(l => l.Id !== id))
@@ -991,14 +1064,22 @@ export default function Admin() {
                   <OverviewView
                     analytics={analytics}
                     pendingListings={pendingListings}
+                    pendingListingsError={pendingListingsError}
                     reports={reports}
+                    reportsError={reportsError}
                     onApprove={handleApprove}
                     onReject={handleReject}
                     onViewAll={setView}
                   />
                 )}
-                {view === 'listings'  && <ListingsView pendingListings={pendingListings} onApprove={handleApprove} onReject={handleReject} onRefresh={loadData} loading={dataLoading} />}
-                {view === 'reports'   && <ReportsTable reports={reports} />}
+                {view === 'listings'  && <ListingsView pendingListings={pendingListings} pendingListingsError={pendingListingsError} onApprove={handleApprove} onReject={handleReject} onRefresh={loadData} loading={dataLoading} />}
+                {view === 'reports'   && (reportsError ? (
+                  <div className="bg-red-50 border border-red-200 rounded-xl2 shadow-card p-10 text-center text-red-600">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-3" />
+                    <p className="font-semibold">Unable to load reports</p>
+                    <p className="text-xs mt-1">{reportsError}</p>
+                  </div>
+                ) : <ReportsTable reports={reports} />)}
                 {view === 'users'     && <UsersView />}
                 {view === 'payments'  && <PaymentsView />}
                 {view === 'refunds'   && <RefundsView />}

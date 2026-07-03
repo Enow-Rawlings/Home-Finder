@@ -1,7 +1,3 @@
-// src/context/AuthContext.jsx — REPLACE ENTIRELY
-// Fixed: role is now read from BOTH the API response AND localStorage on mount
-// so page refreshes don't lose role info causing wrong dashboard.
-
 import { createContext, useContext, useEffect, useState } from 'react'
 import api, { tokenStore } from '../services/api'
 import { normalizeRole } from '../lib/roles'
@@ -10,6 +6,7 @@ const AuthContext = createContext(null)
 
 function authUserFrom(data, fallback = {}) {
   const user = data?.user || data?.User || data || {}
+
   return {
     Id: user.Id || user.UserId || data?.UserId || fallback.Id,
     FullName: user.FullName || user.fullName || data?.FullName || fallback.FullName,
@@ -19,49 +16,42 @@ function authUserFrom(data, fallback = {}) {
 }
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null)
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     const auth = tokenStore.get()
+
     if (!auth?.accessToken) {
       setLoading(false)
-      return
+      return () => { cancelled = true }
     }
 
-    // Set user from cache FIRST so dashboard renders immediately without waiting for /me
-    if (auth.user) {
-      setUser(authUserFrom(auth.user))
-      setLoading(false)  // Stop loading right here — don't wait for background verification
-    } else {
-      setLoading(false)
-    }
-
-    // Then silently verify token in background
     api.auth.me()
-      .then(me => {
-        // Update user with fresh data from server
+      .then((me) => {
+        if (cancelled) return
+
         const normalizedUser = authUserFrom(me, auth.user)
         setUser(normalizedUser)
-        // Keep cache in sync
         tokenStore.set({ ...auth, user: normalizedUser })
       })
       .catch((err) => {
-        // Only clear and redirect on 401 (token expired/invalid)
-        // Don't clear on network errors — let user keep working with cached state
-        if (err.response?.status === 401) {
-          tokenStore.clear()
-          setUser(null)
-        } else {
-          console.warn('Could not verify token with server (non-401 error)')
-        }
+        if (cancelled) return
+
+        console.warn('Could not verify session with server. Please sign in again.', err.response?.status)
+        tokenStore.clear()
+        setUser(null)
       })
-    // No .finally — loading already set above
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
   }, [])
 
   const login = async (email, password) => {
     const data = await api.auth.login({ Email: email, Password: password })
-    // data.Role comes directly from the API — trust it
     const me = authUserFrom(data)
     const auth = tokenStore.get()
     if (auth) tokenStore.set({ ...auth, user: me })

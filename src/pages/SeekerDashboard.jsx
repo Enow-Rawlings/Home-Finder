@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { getCollection, normalizeListing } from '../services/apiResponse'
 
 // Helpers 
 function fmt(n) { return Number(n || 0).toLocaleString() }
@@ -27,6 +28,7 @@ function timeAgo(d) {
 //  Listing card 
 function ListingCard({ listing, badge, onSave, saved }) {
   const photo = listing.PrimaryPhotoUrl || listing.Photos?.[0]?.Url
+  const location = [listing.City, listing.Region].filter(Boolean).join(', ')
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -56,11 +58,11 @@ function ListingCard({ listing, badge, onSave, saved }) {
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3 className="font-display font-semibold text-ink-900 text-sm leading-tight">{listing.Title}</h3>
           <span className="font-bold text-primary-600 text-sm whitespace-nowrap shrink-0">
-            {fmt(listing.PricePerNight)}K <span className="text-xs font-normal text-ink-400">CFA/mo</span>
+            {fmt(listing.PricePerNight)} <span className="text-xs font-normal text-ink-400">{listing.Currency || 'CFA'}/mo</span>
           </span>
         </div>
         <p className="text-xs text-ink-500 flex items-center gap-1 mb-3">
-          <MapPin className="w-3 h-3" /> {listing.City}, {listing.Region}
+          <MapPin className="w-3 h-3" /> {location || listing.Country || 'Location unavailable'}
         </p>
         <div className="flex items-center gap-3 text-xs text-ink-400 pt-3 border-t border-surface-100 mb-3">
           {listing.Bedrooms !== undefined && (
@@ -69,7 +71,7 @@ function ListingCard({ listing, badge, onSave, saved }) {
           {listing.Bathrooms !== undefined && (
             <span className="flex items-center gap-1"><Bath className="w-3.5 h-3.5" />{listing.Bathrooms} Baths</span>
           )}
-          {listing.MaxGuests && (
+          {listing.Type && (
             <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5" />{listing.Type}</span>
           )}
         </div>
@@ -310,7 +312,7 @@ function PropertiesView({ listings, loading, saved, onSave, onSearch }) {
         MaxPrice: maxPrice || undefined,
         Page: 1, PageSize: 20,
       })
-      setResults(res.Items)
+      setResults(getCollection(res).map(normalizeListing))
     } catch { } finally { setSearching(false) }
   }
 
@@ -703,9 +705,9 @@ export default function SeekerDashboard() {
         api.enquiries.mine(),
         api.bookings.mine(),
       ])
-      setListings(l)
-      setEnquiries(e)
-      setBookings(b)
+      setListings(getCollection(l).map(normalizeListing))
+      setEnquiries(getCollection(e))
+      setBookings(getCollection(b))
     } catch { showToast('Failed to load data.') }
     finally { setDataLoading(false) }
   }, [])
