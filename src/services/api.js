@@ -4,7 +4,7 @@ import axios from 'axios'
 // Use an explicit backend URL when configured, otherwise route through /api.
 // If the explicit URL points at the backend root, append /api automatically.
 const rawBase = import.meta.env.VITE_API_URL?.trim()
-const normalizedBase = rawBase ? rawBase.replace(/\/+$, '') : ''
+const normalizedBase = rawBase ? rawBase.replace(/\/+$/, '') : ''
 const BASE = normalizedBase
   ? (normalizedBase.endsWith('/api') ? normalizedBase : `${normalizedBase}/api`)
   : '/api'
