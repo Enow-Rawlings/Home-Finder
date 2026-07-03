@@ -76,11 +76,12 @@ http.interceptors.response.use(
   }
 )
 
-const get   = (url, params) => http.get(url, { params }).then(r => r.data)
-const post  = (url, body)   => http.post(url, body).then(r => r.data)
-const put   = (url, body)   => http.put(url, body).then(r => r.data)
-const patch = (url, body)   => http.patch(url, body).then(r => r.data)
-const del   = (url)         => http.delete(url).then(r => r.data)
+const normalizeEndpoint = (url) => url.startsWith('/') ? url.slice(1) : url
+const get   = (url, params) => http.get(normalizeEndpoint(url), { params }).then(r => r.data)
+const post  = (url, body)   => http.post(normalizeEndpoint(url), body).then(r => r.data)
+const put   = (url, body)   => http.put(normalizeEndpoint(url), body).then(r => r.data)
+const patch = (url, body)   => http.patch(normalizeEndpoint(url), body).then(r => r.data)
+const del   = (url)         => http.delete(normalizeEndpoint(url)).then(r => r.data)
 
 //  Auth 
 const auth = {
