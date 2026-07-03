@@ -1,5 +1,3 @@
-// src/main.jsx — FULL REPLACEMENT
-// Add AuthProvider wrapper around the app
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
