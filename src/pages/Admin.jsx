@@ -1010,7 +1010,7 @@ export default function Admin() {
 
         {/* Footer */}
         <footer className="bg-white border-t border-surface-200 px-6 py-3 flex items-center justify-between shrink-0 text-xs text-ink-400">
-          <span>© 2024 Home Finder Inc. All rights reserved.</span>
+          <span>© 2026 Home Finder Inc. All rights reserved.</span>
           <div className="flex gap-4">
             {['Terms of Service','Privacy Policy','Contact Support'].map(l => (
               <Link key={l} to="#" className="hover:text-primary-600 transition-colors">{l}</Link>
