@@ -2,8 +2,12 @@
 import axios from 'axios'
 
 // Use an explicit backend URL when configured, otherwise route through /api.
-// In dev, Vite proxy handles /api paths; in production, Vercel proxy handles /api paths.
-const BASE = import.meta.env.VITE_API_URL || '/api'
+// If the explicit URL points at the backend root, append /api automatically.
+const rawBase = import.meta.env.VITE_API_URL?.trim()
+const normalizedBase = rawBase ? rawBase.replace(/\/+$, '') : ''
+const BASE = normalizedBase
+  ? (normalizedBase.endsWith('/api') ? normalizedBase : `${normalizedBase}/api`)
+  : '/api'
 
 export const tokenStore = {
   get:   ()     => JSON.parse(localStorage.getItem('hf_auth') || 'null'),
