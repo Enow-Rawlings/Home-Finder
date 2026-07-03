@@ -1,11 +1,9 @@
 
 import axios from 'axios'
 
-// In production, use relative paths (proxied by Vercel)
-// In development, use the local dev server proxy or explicit URL
-const BASE = import.meta.env.DEV 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:5173')
-  : '/api'
+// Use an explicit backend URL when configured, otherwise route through /api.
+// In dev, Vite proxy handles /api paths; in production, Vercel proxy handles /api paths.
+const BASE = import.meta.env.VITE_API_URL || '/api'
 
 export const tokenStore = {
   get:   ()     => JSON.parse(localStorage.getItem('hf_auth') || 'null'),
