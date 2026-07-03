@@ -26,7 +26,7 @@ const features = [
   {
     icon: MessageSquare,
     title: 'Direct Contact',
-    desc: 'Message landlords directly once you unlock a listing — ask questions and book viewings without a go-between.',
+    desc: 'Message landlords directly once you unlock a listing  ask questions and book viewings without a go-between.',
   },
 ]
 
