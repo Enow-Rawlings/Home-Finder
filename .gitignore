@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+.DS_Store
+System.md
+README.md
+vite-dev.err.log

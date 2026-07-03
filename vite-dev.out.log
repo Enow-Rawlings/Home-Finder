@@ -1,0 +1,57 @@
+
+> home-finder@0.1.0 dev
+> vite --host 127.0.0.1
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m644[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m3:43:08 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css, /src/pages/NewListing.jsx, /src/pages/Listings.jsx, /src/pages/PropertyDetails.jsx, /src/pages/LandlordDashboard.jsx, /src/pages/SeekerDashboard.jsx, /src/components/NotificationsPanel.jsx, /src/pages/Payment.jsx[22m
+[2m3:43:08 AM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m3:43:08 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/AuthContext.jsx[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.jsx, /src/index.css[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ProtectedRoute.jsx, /src/index.css[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Login.jsx, /src/index.css[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/PropertyDetails.jsx, /src/index.css[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Navbar.jsx, /src/index.css[22m
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m3:50:05 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/AuthContext.jsx[22m
+[2m3:18:32 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css[22m
+[2m3:18:33 AM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m3:18:33 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/AuthContext.jsx[22m
+[2m3:18:34 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ProtectedRoute.jsx, /src/index.css[22m
+[2m3:18:34 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/PropertyDetails.jsx, /src/index.css[22m
+[2m3:18:34 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.jsx, /src/index.css[22m
+[2m3:18:34 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Login.jsx, /src/index.css[22m
+[2m3:18:34 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Navbar.jsx, /src/index.css[22m
+[2m3:18:35 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/LandlordDashboard.jsx, /src/index.css[22m
+[2m3:18:35 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/SeekerDashboard.jsx, /src/index.css[22m
+[2m3:19:09 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css[22m
+[2m3:19:09 AM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m3:19:09 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/AuthContext.jsx[22m
+[2m3:19:32 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css, /src/pages/Dashboard.jsx, /src/components/ProtectedRoute.jsx, /src/pages/Login.jsx, /src/pages/PropertyDetails.jsx, /src/components/Navbar.jsx[22m
+[2m3:19:32 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css, /src/pages/NewListing.jsx, /src/pages/Listings.jsx, /src/pages/PropertyDetails.jsx, /src/pages/LandlordDashboard.jsx, /src/pages/SeekerDashboard.jsx, /src/components/NotificationsPanel.jsx, /src/pages/Payment.jsx[22m
+[2m3:19:32 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/NotificationsPanel.jsx, /src/index.css[22m
+[2m3:19:32 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Payment.jsx, /src/index.css[22m
+[2m3:19:33 AM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m3:19:33 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/AuthContext.jsx[22m
+[2m3:20:23 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Admin.jsx, /src/index.css[22m
+[2m3:21:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/LandlordDashboard.jsx, /src/index.css[22m
+[2m3:21:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Navbar.jsx, /src/index.css[22m
+[2m3:21:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.jsx, /src/index.css, /src/pages/NewListing.jsx, /src/pages/Listings.jsx, /src/pages/PropertyDetails.jsx, /src/pages/LandlordDashboard.jsx, /src/pages/SeekerDashboard.jsx, /src/components/NotificationsPanel.jsx, /src/pages/Payment.jsx, /src/pages/Admin.jsx[22m
+[2m3:21:05 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/SeekerDashboard.jsx, /src/index.css[22m
+[2m3:21:06 AM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/context/AuthContext.jsx[22m Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m3:21:06 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/context/AuthContext.jsx[22m
+[2m3:22:14 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.jsx, /src/index.css[22m
+[2m3:38:52 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Admin.jsx, /src/index.css[22m
+[2m3:41:13 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Admin.jsx, /src/index.css[22m
+[2m3:41:22 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Admin.jsx, /src/index.css[22m
+[2m3:55:56 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Admin.jsx, /src/index.css[22m
+[2m3:56:00 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Dashboard.jsx, /src/index.css[22m
+[2m3:56:04 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Login.jsx, /src/index.css[22m
+[2m3:56:06 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/NewListing.jsx, /src/index.css[22m
+[2m3:56:08 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/PropertyDetails.jsx, /src/index.css[22m
+[2m3:56:08 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Reviews.jsx, /src/index.css[22m
+[2m3:56:11 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/SeekerDashboard.jsx, /src/index.css[22m
+[2m3:56:14 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.jsx, /src/index.css[22m
