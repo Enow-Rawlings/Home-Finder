@@ -782,7 +782,7 @@ export default function SeekerDashboard() {
         <footer className="bg-white border-t border-surface-200 px-6 py-3 flex items-center justify-between shrink-0">
           <div>
             <p className="text-sm font-display font-bold text-ink-900">Home<span className="text-primary-600">Finder</span></p>
-            <p className="text-xs text-ink-400">© 2024 Home Finder Inc. All rights reserved.</p>
+            <p className="text-xs text-ink-400">© 2026 Home Finder Inc. All rights reserved.</p>
           </div>
           <div className="flex gap-4 text-xs text-ink-400">
             {['Terms of Service','Privacy Policy','Contact Support','Cookies'].map(l => (
