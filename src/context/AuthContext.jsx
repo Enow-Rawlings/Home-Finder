@@ -24,27 +24,39 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const auth = tokenStore.get()
-    if (auth?.accessToken) {
-      // First set user from cache so role-based routing works immediately
-      if (auth.user) setUser(authUserFrom(auth.user))
-      // Then verify token is still valid with the server
-      api.auth.me()
-        .then(me => {
-          // me = { Id, FullName, Email, Role } from GET /api/auth/me
-          const normalizedUser = authUserFrom(me, auth.user)
-          setUser(normalizedUser)
-          // Keep cache in sync
-          tokenStore.set({ ...auth, user: normalizedUser })
-        })
-        .catch(() => {
-          // Token expired/invalid — clear and send to login
-          tokenStore.clear()
-          setUser(null)
-        })
-        .finally(() => setLoading(false))
+    if (!auth?.accessToken) {
+      setLoading(false)
+      return
+    }
+
+    // Set user from cache FIRST so dashboard renders immediately without waiting for /me
+    if (auth.user) {
+      setUser(authUserFrom(auth.user))
+      setLoading(false)  // Stop loading right here — don't wait for background verification
     } else {
       setLoading(false)
     }
+
+    // Then silently verify token in background
+    api.auth.me()
+      .then(me => {
+        // Update user with fresh data from server
+        const normalizedUser = authUserFrom(me, auth.user)
+        setUser(normalizedUser)
+        // Keep cache in sync
+        tokenStore.set({ ...auth, user: normalizedUser })
+      })
+      .catch((err) => {
+        // Only clear and redirect on 401 (token expired/invalid)
+        // Don't clear on network errors — let user keep working with cached state
+        if (err.response?.status === 401) {
+          tokenStore.clear()
+          setUser(null)
+        } else {
+          console.warn('Could not verify token with server (non-401 error)')
+        }
+      })
+    // No .finally — loading already set above
   }, [])
 
   const login = async (email, password) => {

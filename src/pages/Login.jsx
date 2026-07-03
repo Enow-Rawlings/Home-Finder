@@ -11,7 +11,8 @@ export default function Login() {
   const location  = useLocation()
   const { login } = useAuth()
 
-  const from = location.state?.from?.pathname || '/dashboard'
+  const fallbackDestination = '/dashboard'
+  const from = location.state?.from?.pathname || fallbackDestination
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -35,7 +36,8 @@ export default function Login() {
     try {
       const data = await login(email.trim(), password)
       const role = data?.Role || data?.role || data?.user?.Role || data?.user?.role
-      navigate(isAdminRole(role) ? '/admin' : '/dashboard', { replace: true })
+      const target = isAdminRole(role) ? '/admin' : from || fallbackDestination
+      navigate(target, { replace: true })
     } catch (err) {
       const backendMessage = err.response?.data?.message || err.response?.data?.error || err.response?.data?.detail
       if (err.response?.status === 401) {

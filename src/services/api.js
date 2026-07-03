@@ -1,6 +1,23 @@
 
 import axios from 'axios'
 
+const getAuthData = (data = {}) => {
+  const accessToken = data.AccessToken || data.accessToken || null
+  const refreshToken = data.RefreshToken || data.refreshToken || null
+  const user = data.user || data.User || {}
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      Id: user.Id || user.UserId || data.UserId || null,
+      FullName: user.FullName || user.fullName || data.FullName || null,
+      Email: user.Email || user.email || data.Email || null,
+      Role: user.Role || user.role || data.Role || data.role || null,
+    },
+  }
+}
+
 // Use an explicit backend URL when configured, otherwise route through /api.
 // If the explicit URL points at the backend root, append /api automatically.
 const rawBase = import.meta.env.VITE_API_URL?.trim()
@@ -10,7 +27,14 @@ const BASE = normalizedBase
   : '/api'
 
 export const tokenStore = {
-  get:   ()     => JSON.parse(localStorage.getItem('hf_auth') || 'null'),
+  get: () => {
+    try {
+      return JSON.parse(localStorage.getItem('hf_auth') || 'null')
+    } catch (error) {
+      localStorage.removeItem('hf_auth')
+      return null
+    }
+  },
   set:   (data) => localStorage.setItem('hf_auth', JSON.stringify(data)),
   clear: ()     => localStorage.removeItem('hf_auth'),
 }
@@ -57,13 +81,15 @@ http.interceptors.response.use(
       orig._retry = true
       isRefreshing = true
       try {
-        const refreshUrl = BASE === '/api' ? '/auth/refresh' : `${BASE}/api/auth/refresh`
-        const { data } = await axios.post(refreshUrl, { RefreshToken: auth.refreshToken })
-        const updated = { ...auth, accessToken: data.AccessToken, refreshToken: data.RefreshToken }
+        const refreshToken = auth.refreshToken || auth.RefreshToken
+        const refreshUrl = `${BASE}/auth/refresh`
+        const { data } = await axios.post(refreshUrl, { RefreshToken: refreshToken })
+        const { accessToken, refreshToken: newRefreshToken } = getAuthData(data)
+        const updated = { ...auth, accessToken, refreshToken: newRefreshToken }
         tokenStore.set(updated)
-        http.defaults.headers.common.Authorization = `Bearer ${data.AccessToken}`
-        flush(null, data.AccessToken)
-        orig.headers.Authorization = `Bearer ${data.AccessToken}`
+        http.defaults.headers.common.Authorization = `Bearer ${accessToken}`
+        flush(null, accessToken)
+        if (orig.headers) orig.headers.Authorization = `Bearer ${accessToken}`
         return http(orig)
       } catch (e) {
         flush(e, null)
@@ -87,12 +113,14 @@ const del   = (url)         => http.delete(normalizeEndpoint(url)).then(r => r.d
 const auth = {
   register: async (body) => {
     const data = await post('/auth/register', body)
-    tokenStore.set({ accessToken: data.AccessToken, refreshToken: data.RefreshToken, user: { Id: data.UserId, FullName: data.FullName, Email: data.Email, Role: data.Role } })
+    const { accessToken, refreshToken, user } = getAuthData(data)
+    tokenStore.set({ accessToken, refreshToken, user })
     return data
   },
   login: async (body) => {
     const data = await post('/auth/login', body)
-    tokenStore.set({ accessToken: data.AccessToken, refreshToken: data.RefreshToken, user: { Id: data.UserId, FullName: data.FullName, Email: data.Email, Role: data.Role } })
+    const { accessToken, refreshToken, user } = getAuthData(data)
+    tokenStore.set({ accessToken, refreshToken, user })
     return data
   },
   me: () => get('/auth/me'),
