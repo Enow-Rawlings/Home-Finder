@@ -102,7 +102,7 @@ export default function NewListing() {
 
   //  Step 2: Photo handling 
   const handlePhotoSelect = (e) => {
-    const allowed = 8 - photos.length
+    const allowed = 2 - photos.length
     const files   = Array.from(e.target.files).slice(0, allowed)
     const newPhotos = files.map(file => ({
       file,
@@ -339,12 +339,12 @@ export default function NewListing() {
               photos.length >= 8 ? 'border-surface-200 opacity-50 cursor-not-allowed' : 'border-surface-300 hover:border-primary-400'
             }`}>
               <ImagePlus className="w-10 h-10 text-ink-300 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-ink-600">
-                {photos.length >= 8 ? 'Maximum 8 photos reached' : 'Click to add photos'}
-              </p>
-              <p className="text-xs text-ink-400 mt-1">
-                JPG, PNG, WEBP — max 10MB each. {8 - photos.length} remaining.
-              </p>
+                <p className="text-sm font-semibold text-ink-600">
+                  {photos.length >= 2 ? 'Maximum 2 photos reached' : 'Click to add photos'}
+                </p>
+                <p className="text-xs text-ink-400 mt-1">
+                  JPG, PNG, WEBP — max 10MB each. {2 - photos.length} remaining.
+                </p>
               <input
                 type="file" accept="image/*" multiple
                 disabled={photos.length >= 8}
