@@ -1,12 +1,11 @@
-// src/services/api.js — REPLACE ENTIRELY
-// Fixed: added request/response logging to debug API issues,
-// better error handling, and correct token storage keys.
 
 import axios from 'axios'
 
-// Use `VITE_API_BASE` if provided. In dev, default to the Vite proxy (empty string)
-// so requests to `/api/*` are proxied to the backend and avoid CORS preflight errors.
-const BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? '' : 'https://home-finder-api.onrender.com')
+// In production, use relative paths (proxied by Vercel)
+// In development, use the local dev server proxy or explicit URL
+const BASE = import.meta.env.DEV 
+  ? (import.meta.env.VITE_API_URL || 'http://localhost:5173')
+  : '/api'
 
 export const tokenStore = {
   get:   ()     => JSON.parse(localStorage.getItem('hf_auth') || 'null'),
@@ -19,7 +18,7 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// ── Request interceptor ───────────────────────────────────────────────────────
+//  Request interceptor 
 http.interceptors.request.use((config) => {
   const auth = tokenStore.get()
   if (auth?.accessToken) {
@@ -30,7 +29,7 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-// ── Response interceptor ─────────────────────────────────────────────────────
+//  Response interceptor 
 let isRefreshing = false
 let queue = []
 const flush = (err, token) => { queue.forEach(p => err ? p.reject(err) : p.resolve(token)); queue = [] }
@@ -56,7 +55,8 @@ http.interceptors.response.use(
       orig._retry = true
       isRefreshing = true
       try {
-        const { data } = await axios.post(`${BASE}/api/auth/refresh`, { RefreshToken: auth.refreshToken })
+        const refreshUrl = BASE === '/api' ? '/api/auth/refresh' : `${BASE}/api/auth/refresh`
+        const { data } = await axios.post(refreshUrl, { RefreshToken: auth.refreshToken })
         const updated = { ...auth, accessToken: data.AccessToken, refreshToken: data.RefreshToken }
         tokenStore.set(updated)
         http.defaults.headers.common.Authorization = `Bearer ${data.AccessToken}`
@@ -80,7 +80,7 @@ const put   = (url, body)   => http.put(url, body).then(r => r.data)
 const patch = (url, body)   => http.patch(url, body).then(r => r.data)
 const del   = (url)         => http.delete(url).then(r => r.data)
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+//  Auth 
 const auth = {
   register: async (body) => {
     const data = await post('/api/auth/register', body)
@@ -107,7 +107,7 @@ const auth = {
   },
 }
 
-// ── Listings ─────────────────────────────────────────────────────────────────
+//  Listings 
 const listings = {
   browse: (params) => get('/api/listings', params),
   getById: (id) => get(`/api/listings/${id}`),
@@ -117,12 +117,12 @@ const listings = {
   submitForVerification: (id) => post(`/api/listings/${id}/submit-for-verification`),
 }
 
-// ── Search ───────────────────────────────────────────────────────────────────
+//  Search 
 const search = {
   listings: (params) => get('/api/search/listings', params),
 }
 
-// ── Photos ───────────────────────────────────────────────────────────────────
+//  Photos 
 const photos = {
   getAll: (listingId) => get(`/api/listings/${listingId}/photos`),
   upload: (listingId, formData) =>
@@ -131,13 +131,13 @@ const photos = {
   delete: (listingId, photoId) => del(`/api/listings/${listingId}/photos/${photoId}`),
 }
 
-// ── Reviews ──────────────────────────────────────────────────────────────────
+//  Reviews 
 const reviews = {
   getForListing: (listingId) => get(`/api/listings/${listingId}/reviews`),
   create: (body) => post('/api/reviews', body),
 }
 
-// ── Bookings ─────────────────────────────────────────────────────────────────
+//  Bookings 
 const bookings = {
   mine: () => get('/api/bookings/mine'),
   forListing: (listingId) => get(`/api/listings/${listingId}/bookings`),
@@ -147,13 +147,13 @@ const bookings = {
   cancel: (id) => post(`/api/bookings/${id}/cancel`),
 }
 
-// ── Payments ─────────────────────────────────────────────────────────────────
+//  Payments 
 const payments = {
   initiate: (bookingId) => post('/api/payments', { BookingId: bookingId }),
   requestRefund: (paymentId, reason) => post(`/api/payments/${paymentId}/refunds`, { Reason: reason }),
 }
 
-// ── Enquiries ────────────────────────────────────────────────────────────────
+//  Enquiries 
 const enquiries = {
   mine: () => get('/api/enquiries/mine'),
   getThread: (threadId) => get(`/api/enquiries/${threadId}`),
@@ -162,7 +162,7 @@ const enquiries = {
   close: (threadId) => post(`/api/enquiries/${threadId}/close`),
 }
 
-// ── Notifications ────────────────────────────────────────────────────────────
+//  Notifications 
 const notifications = {
   getAll: (params) => get('/api/notifications', params),
   unreadCount: () => get('/api/notifications/unread-count'),
@@ -170,12 +170,12 @@ const notifications = {
   archive: (id) => post(`/api/notifications/${id}/archive`),
 }
 
-// ── Reports ──────────────────────────────────────────────────────────────────
+//  Reports 
 const reports = {
   create: (body) => post('/api/reports', body),
 }
 
-// ── Admin ────────────────────────────────────────────────────────────────────
+//  Admin 
 const admin = {
   getDashboardAnalytics: () => get('/api/admin/analytics/dashboard'),
   listUsers: (params) => get('/api/admin/users', params),
